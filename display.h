@@ -3,6 +3,8 @@
 
 #include "createGame.h"
 
+void printLogo();
+
 void clearScreen();
 
 void afficherPlateau(Jeu *jeu);

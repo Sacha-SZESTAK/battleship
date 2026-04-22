@@ -21,7 +21,8 @@ typedef struct {
     char* attackEnnemy[10][10];
     int nbBateaux;
     int tour;
-
+    bool j1Replay;
+    bool j2Replay;
     int x;
     int y;
     int taille;

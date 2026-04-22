@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -43,23 +44,20 @@ int interactiveShoot(Jeu *jeu) {
         printf("Sélectionnez la case ou vous souhaitez tirer\n");
         read(STDIN_FILENO, &ch, 1);
 
-        // déplacement
         if (ch == 'z' && jeu->y > 0) jeu->y--;
         else if (ch == 's' && jeu->y < ROWS - 1) jeu->y++;
         else if (ch == 'q' && jeu->x > 0) jeu->x--;
         else if (ch == 'd' && jeu->x < COLS - 1) jeu->x++;
 
-        // Limites
         if (jeu->x >= COLS) jeu->x = COLS - 1;
         if (jeu->y >= ROWS) jeu->y = ROWS - 1;
         if (jeu->x < 0) jeu->x = 0;
         if (jeu->y < 0) jeu->y = 0;
 
-        // validation tir
         else if (ch == '\n') {
             // Empêcher de tirer sur une case déjà tirée
             if (strcmp(jeu->attackPlayer[jeu->y][jeu->x], "    ") != 0) {
-                printf("\a"); // bip
+                printf("\a");
                 continue;
             }
             jeu->isShooting = false;
@@ -88,7 +86,7 @@ void testShoot(Jeu *jeu) {
                 b->touch[t] = 1;
                 jeu->attackPlayer[jeu->y][jeu->x] = " ❌ ";
                 jeu->enemyGrid[jeu->y][jeu->x] = "💥";
-                printf("touché\n");
+                printf("touché ! Vous rejouez.\n");
                 hit = true;
                 break;
             }
@@ -102,9 +100,13 @@ void testShoot(Jeu *jeu) {
         printf("raté\n");
     }
 
+    // j1Replay reflète si on a touché ou non
+    jeu->j1Replay = hit;
+
     afficherPlateau(jeu);
     debug(jeu);
 }
+
 
 /*void testShoot(Jeu *jeu){
 int h=0;
@@ -155,6 +157,8 @@ int v=0;
 }*/
 
 
+
+
 void temp(){
     clearScreen();
     printf("coulé\n");
@@ -189,34 +193,29 @@ void testSunk(Jeu *jeu) {
 
 
 void testEnd(Jeu *jeu) {
-    // Vérifier si tous les bateaux ennemis sont coulés → joueur gagne
     int enemyDrowned = 0;
     for (int i = 0; i < 5; i++) {
         if (jeu->enemyBoats[i].drowned) enemyDrowned++;
     }
     if (enemyDrowned == 5) {
-        jeu->end = 1; // joueur gagne
+        jeu->end = 1;
         return;
     }
 
-    // Vérifier si tous les bateaux du joueur sont coulés → IA gagne
     int playerDrowned = 0;
     for (int i = 0; i < 5; i++) {
         if (jeu->boats[i].drowned) playerDrowned++;
     }
     if (playerDrowned == 5) {
-        jeu->end = 2; // IA gagne
+        jeu->end = 2;
     }
 }
 
-
-// ─── TIR IA (random sur cases non encore tirées) ────────────────────────────
 
 void iaShoot(Jeu *jeu) {
     int ix, iy;
     int safety = 0;
 
-    // Chercher une case non encore tirée par l'IA (attackEnnemy vide)
     do {
         ix = rand() % COLS;
         iy = rand() % ROWS;
@@ -226,7 +225,6 @@ void iaShoot(Jeu *jeu) {
     printf(YELLOW "L'ennemi tire en %c%d...\n" RESET, 'A' + iy, ix + 1);
     sleep(1);
 
-    // Vérifier si l'IA touche un bateau du joueur
     bool hit = false;
 
     for (int i = 0; i < 5; i++) {
@@ -241,7 +239,7 @@ void iaShoot(Jeu *jeu) {
                 b->touch[t] = 1;
                 jeu->attackEnnemy[iy][ix] = " ❌ ";
                 jeu->grille[iy][ix] = "💥";
-                printf(RED "L'ennemi vous a touché en %c%d !\n" RESET, 'A' + iy, ix + 1);
+                printf(RED "L'ennemi vous a touché en %c%d ! Il rejoue.\n" RESET, 'A' + iy, ix + 1);
                 hit = true;
                 break;
             }
@@ -254,6 +252,9 @@ void iaShoot(Jeu *jeu) {
         printf("L'ennemi a raté en %c%d.\n", 'A' + iy, ix + 1);
     }
 
+    // j2Replay reflète si l'IA a touché ou non
+    jeu->j2Replay = hit;
+
     afficherPlateau(jeu);
     printf("Appuyez sur Entrée pour continuer...");
     getchar();
@@ -264,33 +265,45 @@ void playGame(Jeu *jeu) {
     srand(time(NULL));
     clearScreen();
 
+    // Initialiser les flags de replay à false
+    jeu->j1Replay = false;
+    jeu->j2Replay = false;
+
     while (jeu->end == 0) {
 
         // ══════════════ TOUR DU JOUEUR ══════════════
         jeu->tour = 1;
 
-        afficherPlateau(jeu);
-        printf("À vous de jouer.\n");
-        debug(jeu);
+        do {
+            afficherPlateau(jeu);
+            printf("À vous de jouer.\n");
+            if (jeu->j1Replay) printf(GREEN "Vous avez touché, vous rejouez !\n" RESET);
+            debug(jeu);
 
-        interactiveShoot(jeu);
-        getchar();
+            interactiveShoot(jeu);
 
-        testShoot(jeu);
-        testSunk(jeu);
-        testEnd(jeu);
+            testShoot(jeu);
+            testSunk(jeu);
+            testEnd(jeu);
+
+        } while (jeu->j1Replay == true && jeu->end == 0);
 
         if (jeu->end != 0) break;
 
         // ══════════════ TOUR DE L'IA ══════════════
         jeu->tour = 0;
 
-        clearScreen();
-        afficherPlateau(jeu);
-        iaShoot(jeu);
+        do {
+            clearScreen();
+            afficherPlateau(jeu);
+            if (jeu->j2Replay) printf(YELLOW "L'ennemi a touché, il rejoue !\n" RESET);
 
-        testSunk(jeu);
-        testEnd(jeu);
+            iaShoot(jeu);
+
+            testSunk(jeu);
+            testEnd(jeu);
+
+        } while (jeu->j2Replay == true && jeu->end == 0);
     }
 
     clearScreen();
@@ -302,6 +315,7 @@ void playGame(Jeu *jeu) {
     getchar();
     getchar();
 }
+
 
 
 

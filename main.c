@@ -31,7 +31,7 @@
 #define ROWS 10
 #define COLS 10
 
-
+float version = 0.9;
 
 
 
@@ -216,7 +216,10 @@ int main(){
 
     while (quitter == 0){
         clearScreen();
-        printf("\nBATAILLE NAVALE - Version 0.5\n\n");
+        printLogo();
+        printf("version : %.1f\n",version);
+        printf("\n\n");
+        //printf("\nBATAILLE NAVALE - Version 0.5\n\n");
 
 
         printf("Menu Principal\n");
