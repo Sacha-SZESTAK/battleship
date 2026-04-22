@@ -6,8 +6,7 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <string.h>
-
-
+#include <time.h>
 
 
 //délcaration des fichiers 
@@ -24,85 +23,11 @@
 #define BG_BLACK "\033[40m"
 #define BOLD    "\033[1m"
 #define BLUE    "\033[34m"
+#define YELLOW  "\033[33m"
 
 
 #define ROWS 10
 #define COLS 10
-
-
-
-/*int interactiveShoot(Jeu *jeu) {
-    struct termios oldSettings;
-    configureTerminal(&oldSettings);
-
-    int selected = 0;
-    char ch;
-
-    // Tableau pour savoir quels bateaux ont été posés (0 = non posé, 1 = posé)
-    int placedBoats[5] = {0, 0, 0, 0, 0};
-
-    while (1) {
-        clearScreen();
-
-       
-
-        // Affichage plateau + menu
-        afficherPlateau(jeu);
-        
-
-        // Lecture d'une touche
-        read(STDIN_FILENO, &ch, 1);
-
-    
-
-        // --- Déplacement ---
-        if (ch == 'z' && jeu->y > 0) jeu->y--;
-        else if (ch == 's' && jeu->y < ROWS - 1) jeu->y++;
-        else if (ch == 'q' && jeu->x > 0) jeu->x--;
-        else if (ch == 'd' && jeu->x < COLS - 1) jeu->x++;
-
-        // --- Rotation ---
-        //else if (ch == 'c' || ch == 'C') jeu->horizontal = !jeu->horizontal;
-
-        //Ensuite, dans ta boucle de placement, remplace le code qui posait le bateau par :
-
-        // --- Placement final ---
-        //else if (ch == '\n') {
-            
-
-            int idx = selected; // bateau sélectionné
-
-            Boat *b = &jeu->boats[idx];
-            b->x = jeu->x;
-            b->y = jeu->y;
-            b->size = jeu->taille;
-            b->horizontal = jeu->horizontal;
-            b->placed = true;
-
-            // Placer le bateau
-            // for (int t = 0; t < jeu->taille; t++) {
-                // int bx = jeu->horizontal ? jeu->x + t : jeu->x;
-                // int by = jeu->horizontal ? jeu->y : jeu->y + t;
-                jeu->grille[jeu->y][jeu->x] = "╳";
-            // }
-
-            // Marquer le bateau comme posé
-            
-
-            // Réinitialiser position et orientation pour le prochain bateau
-            
-
-            
-        //}
-
-        // --- Limites ---
-        if (jeu->horizontal && jeu->x + jeu->taille > COLS) jeu->x = COLS - jeu->taille;
-        if (!jeu->horizontal && jeu->y + jeu->taille > ROWS) jeu->y = ROWS - jeu->taille;
-    }
-
-    restoreTerminal(&oldSettings);
-    return 0;
-}*/
 
 
 int interactiveShoot(Jeu *jeu) {
@@ -115,7 +40,7 @@ int interactiveShoot(Jeu *jeu) {
     while (1) {
         clearScreen();
         afficherPlateau(jeu);
-         printf("Sélectionnez la case ou vous souhaitez tirer\n");
+        printf("Sélectionnez la case ou vous souhaitez tirer\n");
         read(STDIN_FILENO, &ch, 1);
 
         // déplacement
@@ -132,21 +57,24 @@ int interactiveShoot(Jeu *jeu) {
 
         // validation tir
         else if (ch == '\n') {
+            // Empêcher de tirer sur une case déjà tirée
+            if (strcmp(jeu->attackPlayer[jeu->y][jeu->x], "    ") != 0) {
+                printf("\a"); // bip
+                continue;
+            }
             jeu->isShooting = false;
             jeu->attackPlayer[jeu->y][jeu->x] = " ➕ ";
             restoreTerminal(&oldSettings);
             clearScreen();
             afficherPlateau(jeu);
-           
             return 0;
         }
     }
 }
 
+
 void testShoot(Jeu *jeu) {
     bool hit = false;
-
-    
 
     for (int i = 0; i < 5; i++) {
         Boat *b = &jeu->enemyBoats[i];
@@ -170,7 +98,7 @@ void testShoot(Jeu *jeu) {
 
     if (!hit) {
         jeu->attackPlayer[jeu->y][jeu->x] = " 🌊 ";
-        jeu->enemyGrid[jeu->y][jeu->x] = "➕";   // ← ajout du 1er
+        jeu->enemyGrid[jeu->y][jeu->x] = " ➕ ";
         printf("raté\n");
     }
 
@@ -226,63 +154,156 @@ int v=0;
     //DEBUG
 }*/
 
+
 void temp(){
     clearScreen();
     printf("coulé\n");
     getchar();
-    
 }
 
 
 void testSunk(Jeu *jeu) {
-    // On ne teste que si c'est le tour de l'ennemi
-    if (jeu->tour != 1) return;
+    // tour=1 → joueur vient de tirer → on vérifie les bateaux ennemis
+    // tour=0 → IA vient de tirer   → on vérifie les bateaux joueur
+    Boat *boats = (jeu->tour == 1) ? jeu->enemyBoats : jeu->boats;
 
     for (int i = 0; i < 5; i++) {
-        Boat *b = &jeu->enemyBoats[i];
-
-        // Skip si déjà coulé
+        Boat *b = &boats[i];
         if (b->drowned) continue;
 
         int hits = 0;
+        for (int t = 0; t < b->size; t++) {
+            if (b->touch[t] == 1) hits++;
+        }
 
-        // Vérifier chaque case du bateau
+        if (hits == b->size) {
+            b->drowned = true;
+            if (jeu->tour == 1)
+                printf("Vous avez coulé le %s ennemi !\n", b->name);
+            else
+                printf("L'ennemi a coulé votre %s !\n", b->name);
+            temp();
+        }
+    }
+}
+
+
+void testEnd(Jeu *jeu) {
+    // Vérifier si tous les bateaux ennemis sont coulés → joueur gagne
+    int enemyDrowned = 0;
+    for (int i = 0; i < 5; i++) {
+        if (jeu->enemyBoats[i].drowned) enemyDrowned++;
+    }
+    if (enemyDrowned == 5) {
+        jeu->end = 1; // joueur gagne
+        return;
+    }
+
+    // Vérifier si tous les bateaux du joueur sont coulés → IA gagne
+    int playerDrowned = 0;
+    for (int i = 0; i < 5; i++) {
+        if (jeu->boats[i].drowned) playerDrowned++;
+    }
+    if (playerDrowned == 5) {
+        jeu->end = 2; // IA gagne
+    }
+}
+
+
+// ─── TIR IA (random sur cases non encore tirées) ────────────────────────────
+
+void iaShoot(Jeu *jeu) {
+    int ix, iy;
+    int safety = 0;
+
+    // Chercher une case non encore tirée par l'IA (attackEnnemy vide)
+    do {
+        ix = rand() % COLS;
+        iy = rand() % ROWS;
+        safety++;
+    } while (strcmp(jeu->attackEnnemy[iy][ix], "    ") != 0 && safety < 1000);
+
+    printf(YELLOW "L'ennemi tire en %c%d...\n" RESET, 'A' + iy, ix + 1);
+    sleep(1);
+
+    // Vérifier si l'IA touche un bateau du joueur
+    bool hit = false;
+
+    for (int i = 0; i < 5; i++) {
+        Boat *b = &jeu->boats[i];
+        if (b->drowned) continue;
+
         for (int t = 0; t < b->size; t++) {
             int bx = b->horizontal ? b->x + t : b->x;
             int by = b->horizontal ? b->y : b->y + t;
 
-            //if (strcmp(jeu->enemyGrid[by][bx], "💥") == 0) {
-            //    hits++;
-            //}
-
-            if (jeu->enemyBoats[i].touch[t] == 1) {
-                hits++;
+            if (ix == bx && iy == by) {
+                b->touch[t] = 1;
+                jeu->attackEnnemy[iy][ix] = " ❌ ";
+                jeu->grille[iy][ix] = "💥";
+                printf(RED "L'ennemi vous a touché en %c%d !\n" RESET, 'A' + iy, ix + 1);
+                hit = true;
+                break;
             }
         }
-
-        // Si toutes les cases touchées, bateau coulé
-        if (hits == b->size) {
-            b->drowned = true;
-            printf("%s coulé !\n", b->name);
-            temp();
-
-        }
+        if (hit) break;
     }
+
+    if (!hit) {
+        jeu->attackEnnemy[iy][ix] = " 🌊 ";
+        printf("L'ennemi a raté en %c%d.\n", 'A' + iy, ix + 1);
+    }
+
+    afficherPlateau(jeu);
+    printf("Appuyez sur Entrée pour continuer...");
+    getchar();
 }
 
 
-void testEnd(Jeu *jeu){
-int isDrowned = 0;
-    for(int i=0; i<5; i++){
-        if (jeu->enemyBoats[i].drowned == 1){
-            isDrowned++;
-        }
-    }
-    if (isDrowned == 5){
-        jeu->end = 1;
+void playGame(Jeu *jeu) {
+    srand(time(NULL));
+    clearScreen();
+
+    while (jeu->end == 0) {
+
+        // ══════════════ TOUR DU JOUEUR ══════════════
+        jeu->tour = 1;
+
+        afficherPlateau(jeu);
+        printf("À vous de jouer.\n");
+        debug(jeu);
+
+        interactiveShoot(jeu);
+        getchar();
+
+        testShoot(jeu);
+        testSunk(jeu);
+        testEnd(jeu);
+
+        if (jeu->end != 0) break;
+
+        // ══════════════ TOUR DE L'IA ══════════════
+        jeu->tour = 0;
+
+        clearScreen();
+        afficherPlateau(jeu);
+        iaShoot(jeu);
+
+        testSunk(jeu);
+        testEnd(jeu);
     }
 
+    clearScreen();
+    if (jeu->end == 1)
+        printf(GREEN BOLD "Félicitations, vous avez gagné !\n" RESET);
+    else
+        printf(RED BOLD "Vous avez perdu... L'ennemi a coulé tous vos bateaux.\n" RESET);
+
+    getchar();
+    getchar();
 }
+
+
 
 /*void testSunk(Jeu *jeu){
     //tour = 0 -> joueur 
@@ -312,43 +333,6 @@ int isDrowned = 0;
     }
 }*/
 
-void playGame(Jeu *jeu){
-
-    clearScreen();
-    
-    while(jeu->end == 0){
-    
-        afficherPlateau(jeu);
-        
-        printf("A vous de jouer.\n");
-        printf("Selectionnez la case à tirer\n");
-
-        //DEBUG
-        debug(jeu);
-        //DEBUG
-
-        interactiveShoot(jeu);
-        getchar();
-
-        testShoot(jeu);
-
-        testSunk(jeu);
-        //jeu->tour = 0;
-
-        testEnd(jeu);
-
-    }
-
-    clearScreen();
-    printf("Fin du jeu");
-    getchar();
-    getchar();
-    //bool test = true;
-    //printf("jeu %hhd",test);
-    //printf("%i",jeu->isShooting);
-    //scanf("%i",&test);
-    
-}
 
 
 
