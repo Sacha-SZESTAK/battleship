@@ -143,7 +143,7 @@ void initGrids(Jeu *jeu) {
 
 
 int main(){
-
+    fflush(stdout);
     int rows = 30;  // nombre de lignes
     int cols = 130; // nombre de colonnes
 

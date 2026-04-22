@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -86,7 +85,8 @@ void testShoot(Jeu *jeu) {
                 b->touch[t] = 1;
                 jeu->attackPlayer[jeu->y][jeu->x] = " ❌ ";
                 jeu->enemyGrid[jeu->y][jeu->x] = "💥";
-                printf("touché ! Vous rejouez.\n");
+                printf(RED "touché ! Vous rejouez.\n"RESET);
+                sleep(1);
                 hit = true;
                 break;
             }
@@ -96,7 +96,7 @@ void testShoot(Jeu *jeu) {
 
     if (!hit) {
         jeu->attackPlayer[jeu->y][jeu->x] = " 🌊 ";
-        jeu->enemyGrid[jeu->y][jeu->x] = " ➕ ";
+        jeu->enemyGrid[jeu->y][jeu->x] = "➕";
         printf("raté\n");
     }
 
@@ -159,9 +159,14 @@ int v=0;
 
 
 
-void temp(){
+void temp(const char *nomBateau, int tourJoueur){
     clearScreen();
-    printf("coulé\n");
+    if (tourJoueur) {
+        printf("⚓ Vous avez coulé le %s ennemi !\n", nomBateau);
+    } else {
+        printf("💥 L'ennemi a coulé votre %s !\n", nomBateau);
+    }
+    printf("Appuyez sur Entrée pour continuer...\n");
     getchar();
 }
 
@@ -183,10 +188,9 @@ void testSunk(Jeu *jeu) {
         if (hits == b->size) {
             b->drowned = true;
             if (jeu->tour == 1)
-                printf("Vous avez coulé le %s ennemi !\n", b->name);
+                temp(b->name, 1);
             else
-                printf("L'ennemi a coulé votre %s !\n", b->name);
-            temp();
+                temp(b->name, 0);
         }
     }
 }
@@ -240,6 +244,7 @@ void iaShoot(Jeu *jeu) {
                 jeu->attackEnnemy[iy][ix] = " ❌ ";
                 jeu->grille[iy][ix] = "💥";
                 printf(RED "L'ennemi vous a touché en %c%d ! Il rejoue.\n" RESET, 'A' + iy, ix + 1);
+                sleep(1);
                 hit = true;
                 break;
             }
@@ -249,15 +254,17 @@ void iaShoot(Jeu *jeu) {
 
     if (!hit) {
         jeu->attackEnnemy[iy][ix] = " 🌊 ";
+        jeu->grille[iy][ix] = "➕";
         printf("L'ennemi a raté en %c%d.\n", 'A' + iy, ix + 1);
+        sleep(1);
     }
 
     // j2Replay reflète si l'IA a touché ou non
     jeu->j2Replay = hit;
 
     afficherPlateau(jeu);
-    printf("Appuyez sur Entrée pour continuer...");
-    getchar();
+    //printf("Appuyez sur Entrée pour continuer...");
+    //getchar();
 }
 
 
@@ -346,7 +353,3 @@ void playGame(Jeu *jeu) {
         }
     }
 }*/
-
-
-
-
