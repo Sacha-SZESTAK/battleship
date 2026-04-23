@@ -29,6 +29,7 @@
 #define RED_BG "\033[41m"
 #define GREEN_BG "\033[42m"
 #define BLUE_BG "\033[44m"
+#define CYAN "\033[36m"
 
 #define ROWS 10
 #define COLS 10
@@ -43,18 +44,50 @@ void clearScreen() {
 
 
 
-void printLogo(){
-    printf(BLUE BOLD);
-    printf("██████╗  █████╗ ████████╗████████╗██╗     ███████╗███████╗██╗  ██╗██╗██████╗ \n");
-    printf("██╔══██╗██╔══██╗╚══██╔══╝╚══██╔══╝██║     ██╔════╝██╔════╝██║  ██║██║██╔══██╗\n");
-    printf("██████╔╝███████║   ██║      ██║   ██║     █████╗  ███████╗███████║██║██████╔╝\n");
-    printf("██╔══██╗██╔══██║   ██║      ██║   ██║     ██╔══╝  ╚════██║██╔══██║██║██╔═══╝ \n");
-    printf("██████╔╝██║  ██║   ██║      ██║   ███████╗███████╗███████║██║  ██║██║██║     \n");
-    printf("╚═════╝ ╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚══════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝╚═╝     \n");
-    printf(RESET);
+void printLogo(int option){
+    // Les 6 lignes du logo
+    const char *lines[6] = {
+        "██████╗  █████╗ ████████╗████████╗██╗     ███████╗███████╗██╗  ██╗██╗██████╗ \n",
+        "██╔══██╗██╔══██╗╚══██╔══╝╚══██╔══╝██║     ██╔════╝██╔════╝██║  ██║██║██╔══██╗\n",
+        "██████╔╝███████║   ██║      ██║   ██║     █████╗  ███████╗███████║██║██████╔╝\n",
+        "██╔══██╗██╔══██║   ██║      ██║   ██║     ██╔══╝  ╚════██║██╔══██║██║██╔═══╝ \n",
+        "██████╔╝██║  ██║   ██║      ██║   ███████╗███████╗███████║██║  ██║██║██║     \n",
+        "╚═════╝ ╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚══════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝╚═╝     \n"
+    };
+
+    if (option == 2){
+        // Affichage standard bleu
+        printf(BLUE BOLD);
+        for(int i = 0; i < 6; i++)
+            printf("%s", lines[i]);
+        printf(RESET);
+
+    } else if (option == 1){
+        // Effet de scintillement : chaque ligne apparaît en cyan, puis repasse en bleu
+        for(int i = 0; i < 6; i++){
+            // Réafficher toutes les lignes déjà posées en bleu
+            printf(BLUE BOLD);
+            for(int j = 0; j < i; j++)
+                printf("%s", lines[j]);
+
+            // Afficher la ligne courante en cyan (scintillement)
+            printf(CYAN BOLD BLINK); // cyan + blink
+            printf("%s", lines[i]);
+            printf(RESET);
+
+            usleep(200000); // 0.15s par ligne
+
+            // Remonter i+1 lignes pour réécrire proprement
+            printf("\033[%dA", i + 1);
+        }
+
+        // Affichage final : tout en bleu, propre
+        printf(BLUE BOLD);
+        for(int i = 0; i < 6; i++)
+            printf("%s", lines[i]);
+        printf(RESET);
+    }
 }
-
-
 
 void afficherPlateau(Jeu *jeu){
 

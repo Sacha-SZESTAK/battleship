@@ -31,7 +31,7 @@
 #define ROWS 10
 #define COLS 10
 
-float version = 0.9;
+char version[10] = "0.9.5";
 
 
 
@@ -141,7 +141,25 @@ void initGrids(Jeu *jeu) {
     }
 }
 
+void informations(){
+    clearScreen();
+    printLogo(2);
+    printf("Bataille Navale - Version %s\n\n",version);
+    printf("Ce projet a été réalisé par Sacha SZESTAK dans le cadre du module de programmation en C du semestre 2 du projet informatique à UniLaSalle Amiens\n");
+    printf("Le projet consiste en la création d'un jeu de bataille navale en ligne de commande, avec une IA basique.\n");
+    printf("Le projet a été réalisé en utilisant le langage C, avec une attention particulière portée à la gestion de la mémoire et à l'optimisation du code.\n");
+    printf("Le projet a été développé en utilisant la norme C17, et a été testé sur un terminal compatible ANSI.\n");
+    printf("Le projet est encore en développement, et de nombreuses fonctionnalités sont prévues pour les futures versions, telles que l'ajout d'un mode multijoueur en ligne, l'amélioration de l'IA, et l'ajout de nouveaux types de bateaux et de cartes.\n");
+    printf("\nGithub : https://github.com/Sacha-SZESTAK/battleship\n");
+    
+    printf("\nCredits : Sacha SZESTAK, Samuel MOATTI - I1 - 2026\n");
+    printf("\n\n\n Appuyez sur une touche pour continuer.\n");
+    printf(">");
+    getchar();
+    getchar();
 
+
+}
 int main(){
     fflush(stdout);
     int rows = 30;  // nombre de lignes
@@ -165,6 +183,7 @@ int main(){
     jeu.lost = false;
     jeu.tour = 1;
     jeu.end = 0;
+    
     
 
     for (int i=0; i<5;i++){
@@ -216,8 +235,8 @@ int main(){
 
     while (quitter == 0){
         clearScreen();
-        printLogo();
-        printf("version : %.1f\n",version);
+        printLogo(1);
+        printf("version : %s\n",version);
         printf("\n\n");
         //printf("\nBATAILLE NAVALE - Version 0.5\n\n");
 
@@ -226,7 +245,8 @@ int main(){
         printf("1) Créer une partie\n");
         printf("2) Règles\n");
         printf("3) Options\n");
-        printf("4) Quitter\n");
+        printf("4) Informations\n");
+        printf("5) Quitter\n");
 
         if(jeu.isDebug == true){
             printf(WHITE RED_BG BLINK "\n /!\\ DEBUG ACTIVÉ /!\\ \n"RESET);
@@ -253,7 +273,7 @@ int main(){
                     continue;
                 }
 
-                if (choix >= 1 && choix <= 4)
+                if (choix >= 1 && choix <= 5)
                 {
                     erreur = 0;
 
@@ -271,6 +291,9 @@ int main(){
                             settings(&jeu);
                             break;
                         case 4:
+                            informations();
+                            break;
+                        case 5:
                             quitter = 1;
                             break;
                     }
