@@ -191,7 +191,7 @@ int main(){
             printf(WHITE RED_BG BLINK "\n /!\\ DEBUG ACTIVÉ /!\\ \n"RESET);
         }
 
-        printf("\n\n\n Copyright Sacha SZESTAK I1 - 2026\n");
+        //printf("\n\n\n Copyright Sacha SZESTAK I1 - 2026\n");
         int erreur = 1;
         while (erreur)
             {
