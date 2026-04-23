@@ -31,7 +31,7 @@
 #define ROWS 10
 #define COLS 10
 
-char version[10] = "0.9.5";
+char version[10] = "1.0.0";
 
 
 
@@ -67,68 +67,7 @@ void rules(){
 }
 
 
-int settings(Jeu *jeu){
-    
-    int choix = 0;
 
-
-    getchar();
-    int erreur = 1;
-        while (erreur)
-            {
-                clearScreen();
-                printf(RED"===OPTIONS===\n\n"RESET);
-                printf("     Option     Etat\n");
-                printf("0) : Retour\n");
-                printf("1) : Debug       %i\n",jeu->isDebug);
-
-                printf(">");
-
-
-                if (scanf("%i", &choix) != 1)
-                {
-                    printf("\a");
-                    printf(RED BOLD);
-                    printf("Erreur CRITIQUE  💣 \n");
-                    printf("Les caractères autres que 0-9 sont INTERDITS 💣💣💣💣💣💣.\n");
-                    choix = 0;
-                    printf(RESET);
-                    
-
-                    // vider le buffer
-                    while (getchar() != '\n');
-
-                    continue;
-                }
-
-                if (choix >= 0 && choix <= 1)
-                {
-                    erreur = 0;
-
-                    switch(choix)
-                    {
-                        case 0:
-                            //printf("ok");
-                            erreur = 0;
-                            return 0;
-                            break;
-
-                        case 1:
-                            jeu->isDebug = !jeu->isDebug;
-                            erreur = 1;
-                            break;
-                        
-                    
-                    }
-                }
-                else
-                {
-                    printf("Erreur : choix invalide\n");
-                }
-            }
-
-
-}
 
 
 void initGrids(Jeu *jeu) {
@@ -236,7 +175,7 @@ int main(){
     while (quitter == 0){
         clearScreen();
         printLogo(1);
-        printf("version : %s\n",version);
+        printf("Version : %s\n",version);
         printf("\n\n");
         //printf("\nBATAILLE NAVALE - Version 0.5\n\n");
 

@@ -20,15 +20,81 @@
 #define RED   "\033[31m"
 #define RESET   "\033[0m"
 #define GREEN   "\033[42m"
+#define GREEN_TXT "\033[32m"
 #define BG_BLACK "\033[40m"
 #define BOLD    "\033[1m"
 #define BLUE    "\033[34m"
 #define YELLOW  "\033[33m"
 
+#define BLINK   "\033[5m"
+
 
 #define ROWS 10
 #define COLS 10
 
+
+int settings(Jeu *jeu){
+    
+    int choix = 0;
+
+
+    getchar();
+    int erreur = 1;
+        while (erreur)
+            {
+                clearScreen();
+                printf(RED"===OPTIONS===\n\n"RESET);
+                printf("     Option     Etat\n");
+                printf("0) : Retour\n");
+                printf("1) : Debug       %i\n",jeu->isDebug);
+
+                printf(">");
+
+
+                if (scanf("%i", &choix) != 1)
+                {
+                    printf("\a");
+                    printf(RED BOLD);
+                    printf("Erreur CRITIQUE  💣 \n");
+                    printf("Les caractères autres que 0-9 sont INTERDITS 💣💣💣💣💣💣.\n");
+                    choix = 0;
+                    printf(RESET);
+                    
+
+                    // vider le buffer
+                    while (getchar() != '\n');
+
+                    continue;
+                }
+
+                if (choix >= 0 && choix <= 1)
+                {
+                    erreur = 0;
+
+                    switch(choix)
+                    {
+                        case 0:
+                            //printf("ok");
+                            erreur = 0;
+                            return 0;
+                            break;
+
+                        case 1:
+                            jeu->isDebug = !jeu->isDebug;
+                            erreur = 1;
+                            break;
+                        
+                    
+                    }
+                }
+                else
+                {
+                    printf("Erreur : choix invalide\n");
+                }
+            }
+
+
+}
 
 int interactiveShoot(Jeu *jeu) {
     struct termios oldSettings;
@@ -65,10 +131,102 @@ int interactiveShoot(Jeu *jeu) {
             clearScreen();
             afficherPlateau(jeu);
             return 0;
+        }else if (ch == 27) {  // touche Échap
+            restoreTerminal(&oldSettings);
+            int result = pauseMenu(jeu);
+            if (result == -1) {
+            jeu->end = 3;  // code "abandon"
+            return -1;
         }
+    configureTerminal(&oldSettings); // reprend le mode raw
+}
     }
 }
 
+int pauseMenu(Jeu *jeu) {
+    struct termios oldSettings;
+    configureTerminal(&oldSettings);
+
+    int selected = 0;
+    const char *options[] = {
+        "Reprendre",
+        "Options",
+        "Quitter la partie"
+    };
+    int nbOptions = 3;
+    char ch;
+
+    while (1) {
+        clearScreen();
+        printf(BLUE BOLD "=== PAUSE ===\n\n" RESET);
+
+        for (int i = 0; i < nbOptions; i++) {
+            if (i == selected)
+                printf(GREEN BOLD " > %s\n" RESET, options[i]);
+            else
+                printf("   %s\n", options[i]);
+        }
+
+        printf("\n[Z/S] naviguer   [Entrée] valider\n");
+
+        read(STDIN_FILENO, &ch, 1);
+
+        if (ch == 'z' || ch == 'Z') selected = (selected - 1 + nbOptions) % nbOptions;
+        else if (ch == 's' || ch == 'S') selected = (selected + 1) % nbOptions;
+        else if (ch == '\n') {
+            //restoreTerminal(&oldSettings);
+            switch (selected) {
+                case 0: return 0;  // reprendre
+                case 1:
+                    restoreTerminal(&oldSettings);
+                    settings(jeu);   // votre fonction options existante
+                    configureTerminal(&oldSettings);
+                    break;
+                case 2:
+                    // Rester en mode raw pour la confirmation
+                    clearScreen();
+                    printf(RED BOLD "Quitter la partie ?\n\n" RESET);
+                    printf(GREEN " > Oui\n" RESET);
+                    printf("   Non\n");
+                    printf("\n[Z/S] naviguer   [Entrée] valider\n");
+
+                    int confirmSelected = 1; // Non par défaut (plus sûr)
+                    char confirmCh;
+
+                    while (1) {
+                        clearScreen();
+                        printf(RED BOLD "Quitter la partie ?\n\n" RESET);
+                        if (confirmSelected == 0)
+                            printf(GREEN BOLD " > Oui\n" RESET "   Non\n");
+                        else
+                            printf("   Oui\n" GREEN BOLD " > Non\n" RESET);
+                        printf("\n[Z/S] naviguer   [Entrée] valider\n");
+
+                        read(STDIN_FILENO, &confirmCh, 1);
+
+                        if (confirmCh == 'z' || confirmCh == 'Z') confirmSelected = 0; // Oui
+                        else if (confirmCh == 's' || confirmCh == 'S') confirmSelected = 1; // Non
+                        else if (confirmCh == 27) break; // Échap → annule, retour pause
+                        else if (confirmCh == '\n') {
+                            if (confirmSelected == 0) {
+                                restoreTerminal(&oldSettings);
+                                jeu->end = 3;
+                                return -1; // quitter confirmé
+                            } else {
+                                break; // Non → retour au menu pause
+                            }
+                        }
+                    }
+                    break; // retour à la boucle principale du pauseMenu
+            }
+        }
+        // Échap ferme aussi la pause (reprend)
+        else if (ch == 27) {
+            restoreTerminal(&oldSettings);
+            return 0;
+        }
+    }
+}
 
 void testShoot(Jeu *jeu) {
     bool hit = false;
@@ -292,6 +450,7 @@ void playGame(Jeu *jeu) {
             testShoot(jeu);
             testSunk(jeu);
             testEnd(jeu);
+            //jeu->end = 1;
 
         } while (jeu->j1Replay == true && jeu->end == 0);
 
@@ -314,13 +473,30 @@ void playGame(Jeu *jeu) {
     }
 
     clearScreen();
-    if (jeu->end == 1)
+    if (jeu->end == 1){
+        printf(GREEN_TXT BLINK" ██████╗  █████╗  ██████╗ ███╗   ██╗███████╗\n");
+        printf("██╔════╝ ██╔══██╗██╔════╝ ████╗  ██║██╔════╝\n");
+        printf("██║  ███╗███████║██║  ███╗██╔██╗ ██║█████╗  \n");
+        printf("██║   ██║██╔══██║██║   ██║██║╚██╗██║██╔══╝  \n");
+        printf("╚██████╔╝██║  ██║╚██████╔╝██║ ╚████║███████╗\n");
+        printf(" ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝\n"RESET);
         printf(GREEN BOLD "Félicitations, vous avez gagné !\n" RESET);
-    else
+        
+    }else{
+        printf(RED BLINK "██████╗ ███████╗██████╗ ██████╗ ██╗   ██╗\n");
+        printf("██╔══██╗██╔════╝██╔══██╗██╔══██╗██║   ██║\n");
+        printf("██████╔╝█████╗  ██████╔╝██║  ██║██║   ██║\n");
+        printf("██╔═══╝ ██╔══╝  ██╔══██╗██║  ██║██║   ██║\n");
+        printf("██║     ███████╗██║  ██║██████╔╝╚██████╔╝\n");
+        printf("╚═╝     ╚══════╝╚═╝  ╚═╝╚═════╝  ╚═════╝ \n"RESET);    
         printf(RED BOLD "Vous avez perdu... L'ennemi a coulé tous vos bateaux.\n" RESET);
 
+        
+    }
+    printf("Appuyez sur une touche pour revenir au menu principal.\n");
+    printf(">");
     getchar();
-    getchar();
+    //getchar();
 }
 
 

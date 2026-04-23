@@ -205,7 +205,39 @@ int getBoatSize(int selected) {
     }
 }
 
+void resetVar(Jeu *jeu) {
+    jeu->x = 0;
+    jeu->y = 0;
+    jeu->taille = 5;
+    jeu->horizontal = true;
+    jeu->lost = false;
+    jeu->tour = 1;
+    jeu->end = 0;
 
+    for (int i=0; i<5;i++){
+        jeu->boats[i].drowned = false;
+        jeu->enemyBoats[i].drowned = false; 
+        for(int j=0; j<5;j++){
+            jeu->boats[i].touch[j] = 0;
+            jeu->boats[i].x = 0;
+            jeu->boats[i].y = 0;
+            jeu->enemyBoats[i].x = 0;
+            jeu->enemyBoats[i].y = 0;
+            jeu->enemyBoats[i].touch[j] = 0;
+        }
+    }
+
+    for(int i=0; i<10;i++){
+        for(int j=0 ; j<10;j++){
+            jeu->grille[i][j] = "🌊";
+            jeu->attackPlayer[i][j] = "    ";
+            jeu->enemyGrid[i][j] = "🌊";
+            jeu->attackEnnemy[i][j] = "    ";
+        }
+    }
+
+
+}
 
 
 void createGame(Jeu *jeu){
@@ -214,6 +246,12 @@ void createGame(Jeu *jeu){
     int RPorteA = 1; int RCroiseur=1; int RContreT=1; int RSousM=1; int RToprilleur = 1;
     
     int plateau = 1;
+
+
+    //RÉINITIALISATION DES VATIABLES
+    
+    resetVar(jeu);
+
 
     for(int i=0; i<=9;i++){
         for(int b=0 ; b<=9;b++){
@@ -300,6 +338,7 @@ void createGame(Jeu *jeu){
                             getchar();
                             
                             playGame(jeu);
+                            erreur = 0;
                             break;
 
                         case 2:
@@ -321,10 +360,10 @@ void createGame(Jeu *jeu){
 
 
 
-    getchar();
+    //getchar();
     
-    getchar();
-    scanf("%i",&test);
+    //getchar();
+    //scanf("%i",&test);
     
 }
 
