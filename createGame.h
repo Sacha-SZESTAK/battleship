@@ -1,24 +1,38 @@
 #ifndef CREATEGAME_H
 #define CREATEGAME_H
 
-//#include "display.h"
+#include <stdbool.h>
+
+// États possibles d'une case
+typedef enum {
+    CASE_VIDE,
+    CASE_BATEAU,
+    CASE_TOUCHE,
+    CASE_RATE,
+    CASE_COULE
+} EtatCase;
+
+// Structure d'une case
+typedef struct {
+    EtatCase etat;
+    int boatIndex; // index du bateau sur cette case (-1 si vide)
+} Case;
 
 typedef struct {
-    int x, y;        // position du coin supérieur gauche
-    int size;        // taille du bateau
-    bool horizontal; // orientation
-    bool placed;     // vrai si le bateau est déjà posé
-    char name[20];   //nom du bateau
+    int x, y;
+    int size;
+    bool horizontal;
+    bool placed;
+    char name[20];
     bool drowned;
     int touch[5];
 } Boat;
 
 typedef struct {
-    char* grille[10][10];
-    char* attackPlayer[10][10];
-
-    char *enemyGrid[10][10];
-    char* attackEnnemy[10][10];
+    Case grille[10][10];        // plateau joueur
+    Case attackPlayer[10][10];  // tirs du joueur sur l'ennemi
+    Case enemyGrid[10][10];     // plateau ennemi
+    Case attackEnnemy[10][10];  // tirs de l'ennemi sur le joueur
     int nbBateaux;
     int tour;
     bool j1Replay;
@@ -30,8 +44,8 @@ typedef struct {
     char ch;
     int num;
     bool isplacement;
-    Boat boats[5]; // bateaux joueur
-    Boat enemyBoats[5];  //bateaux ennemis
+    Boat boats[5];
+    Boat enemyBoats[5];
     bool displayEnnemy;
     bool isShooting;
     bool isDebug;
@@ -40,10 +54,8 @@ typedef struct {
 } Jeu;
 
 void createGame(Jeu *jeu);
-
 void restoreTerminal(struct termios *oldSettings);
-
 void configureTerminal(struct termios *oldSettings);
-
+void resetVar(Jeu *jeu);
 
 #endif

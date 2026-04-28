@@ -3,7 +3,7 @@
 
 #include "createGame.h"
 
-void printLogo();
+void printLogo(int option);
 
 void clearScreen();
 

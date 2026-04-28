@@ -93,7 +93,7 @@ int settings(Jeu *jeu){
                 }
             }
 
-
+return 0;
 }
 
 int interactiveShoot(Jeu *jeu) {
@@ -121,12 +121,12 @@ int interactiveShoot(Jeu *jeu) {
 
         else if (ch == '\n') {
             // Empêcher de tirer sur une case déjà tirée
-            if (strcmp(jeu->attackPlayer[jeu->y][jeu->x], "    ") != 0) {
+            if (jeu->attackPlayer[jeu->y][jeu->x].etat != CASE_VIDE) {
                 printf("\a");
                 continue;
             }
             jeu->isShooting = false;
-            jeu->attackPlayer[jeu->y][jeu->x] = " ➕ ";
+            jeu->attackPlayer[jeu->y][jeu->x] = (Case){CASE_VIDE, -1};
             restoreTerminal(&oldSettings);
             clearScreen();
             afficherPlateau(jeu);
@@ -158,7 +158,7 @@ int pauseMenu(Jeu *jeu) {
 
     while (1) {
         clearScreen();
-        printf(BLUE BOLD "=== PAUSE ===\n\n" RESET);
+        printf(BLUE BOLD "=== "BLINK "PAUSE" RESET BLUE BOLD " ===\n\n" RESET);
 
         for (int i = 0; i < nbOptions; i++) {
             if (i == selected)
@@ -241,10 +241,8 @@ void testShoot(Jeu *jeu) {
 
             if (jeu->x == bx && jeu->y == by) {
                 b->touch[t] = 1;
-                jeu->attackPlayer[jeu->y][jeu->x] = " ❌ ";
-                jeu->enemyGrid[jeu->y][jeu->x] = "💥";
-                printf(RED "touché ! Vous rejouez.\n"RESET);
-                sleep(1);
+                jeu->attackPlayer[jeu->y][jeu->x] = (Case){CASE_TOUCHE, i};
+                jeu->enemyGrid[jeu->y][jeu->x]    = (Case){CASE_TOUCHE, i};
                 hit = true;
                 break;
             }
@@ -253,14 +251,10 @@ void testShoot(Jeu *jeu) {
     }
 
     if (!hit) {
-        jeu->attackPlayer[jeu->y][jeu->x] = " 🌊 ";
-        jeu->enemyGrid[jeu->y][jeu->x] = "➕";
-        printf("raté\n");
+        jeu->attackPlayer[jeu->y][jeu->x] = (Case){CASE_RATE, -1};
     }
 
-    // j1Replay reflète si on a touché ou non
     jeu->j1Replay = hit;
-
     afficherPlateau(jeu);
     debug(jeu);
 }
@@ -382,7 +376,7 @@ void iaShoot(Jeu *jeu) {
         ix = rand() % COLS;
         iy = rand() % ROWS;
         safety++;
-    } while (strcmp(jeu->attackEnnemy[iy][ix], "    ") != 0 && safety < 1000);
+    } while (jeu->attackEnnemy[iy][ix].etat != CASE_VIDE && safety < 1000);
 
     printf(YELLOW "L'ennemi tire en %c%d...\n" RESET, 'A' + iy, ix + 1);
     sleep(1);
@@ -399,8 +393,8 @@ void iaShoot(Jeu *jeu) {
 
             if (ix == bx && iy == by) {
                 b->touch[t] = 1;
-                jeu->attackEnnemy[iy][ix] = " ❌ ";
-                jeu->grille[iy][ix] = "💥";
+                jeu->attackEnnemy[iy][ix] = (Case){CASE_TOUCHE, i};
+                jeu->grille[iy][ix]       = (Case){CASE_TOUCHE, i};
                 printf(RED "L'ennemi vous a touché en %c%d ! Il rejoue.\n" RESET, 'A' + iy, ix + 1);
                 sleep(1);
                 hit = true;
@@ -411,18 +405,14 @@ void iaShoot(Jeu *jeu) {
     }
 
     if (!hit) {
-        jeu->attackEnnemy[iy][ix] = " 🌊 ";
-        jeu->grille[iy][ix] = "➕";
+        jeu->attackEnnemy[iy][ix] = (Case){CASE_RATE, -1};
+        jeu->grille[iy][ix]       = (Case){CASE_RATE, -1};
         printf("L'ennemi a raté en %c%d.\n", 'A' + iy, ix + 1);
         sleep(1);
     }
 
-    // j2Replay reflète si l'IA a touché ou non
     jeu->j2Replay = hit;
-
     afficherPlateau(jeu);
-    //printf("Appuyez sur Entrée pour continuer...");
-    //getchar();
 }
 
 

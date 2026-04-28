@@ -72,7 +72,7 @@ bool canPlaceBoatAt(Jeu *jeu, int x, int y, int taille, bool horizontal) {
         if (bx < 0 || bx >= COLS || by < 0 || by >= ROWS)
             return false;
 
-        if (strcmp(jeu->enemyGrid[by][bx], "🚢") == 0)
+        if (jeu->enemyGrid[by][bx].etat == CASE_BATEAU)
             return false;
     }
     return true;
@@ -125,10 +125,9 @@ bool canPlaceBoatAt(Jeu *jeu, int x, int y, int taille, bool horizontal) {
 void generateOpponentBoard(Jeu *jeu) {
     srand(time(NULL));
 
-    // init grille ennemie
     for (int i = 0; i < ROWS; i++)
         for (int j = 0; j < COLS; j++)
-            jeu->enemyGrid[i][j] = "🌊";
+            jeu->enemyGrid[i][j] = (Case){CASE_VIDE, -1};
 
     int tailles[5] = {5, 4, 3, 3, 2};
 
@@ -138,52 +137,37 @@ void generateOpponentBoard(Jeu *jeu) {
 
         while (!placed && safety < 1000) {
             safety++;
-
             int x = rand() % COLS;
             int y = rand() % ROWS;
             bool horizontal = rand() % 2;
 
-            // ⚠️ IMPORTANT → vérifier sur enemyGrid
             bool valid = true;
-
             for (int t = 0; t < tailles[i]; t++) {
                 int bx = horizontal ? x + t : x;
                 int by = horizontal ? y : y + t;
 
-                if (bx >= COLS || by >= ROWS) {
-                    valid = false;
-                    break;
-                }
-
-                if (strcmp(jeu->enemyGrid[by][bx], "🚢") == 0) {
-                    valid = false;
-                    break;
-                }
+                if (bx >= COLS || by >= ROWS) { valid = false; break; }
+                if (jeu->enemyGrid[by][bx].etat == CASE_BATEAU) { valid = false; break; }
             }
 
             if (valid) {
-                // 🔥 stocker dans enemyBoats
                 Boat *b = &jeu->enemyBoats[i];
-                b->x = x;
-                b->y = y;
+                b->x = x; b->y = y;
                 b->size = tailles[i];
                 b->horizontal = horizontal;
                 b->placed = true;
+                b->drowned = false;
+                for (int k = 0; k < 5; k++) b->touch[k] = 0;
 
-                // placer sur la grille
                 for (int t = 0; t < tailles[i]; t++) {
                     int bx = horizontal ? x + t : x;
                     int by = horizontal ? y : y + t;
-                    jeu->enemyGrid[by][bx] = "🚢";
+                    jeu->enemyGrid[by][bx] = (Case){CASE_BATEAU, i};
                 }
-
                 placed = true;
             }
         }
-
-        if (!placed) {
-            printf("Erreur placement bateau ennemi %d\n", i);
-        }
+        if (!placed) printf("Erreur placement bateau ennemi %d\n", i);
     }
 }
 
@@ -213,30 +197,35 @@ void resetVar(Jeu *jeu) {
     jeu->lost = false;
     jeu->tour = 1;
     jeu->end = 0;
+    jeu->isplacement = false;
+    jeu->isShooting = false;
+    jeu->displayEnnemy = false;
+    jeu->j1Replay = false;
+    jeu->j2Replay = false;
 
-    for (int i=0; i<5;i++){
+    for (int i = 0; i < 5; i++) {
         jeu->boats[i].drowned = false;
-        jeu->enemyBoats[i].drowned = false; 
-        for(int j=0; j<5;j++){
+        jeu->boats[i].placed = false;
+        jeu->boats[i].x = 0;
+        jeu->boats[i].y = 0;
+        jeu->enemyBoats[i].drowned = false;
+        jeu->enemyBoats[i].placed = false;
+        jeu->enemyBoats[i].x = 0;
+        jeu->enemyBoats[i].y = 0;
+        for (int j = 0; j < 5; j++) {
             jeu->boats[i].touch[j] = 0;
-            jeu->boats[i].x = 0;
-            jeu->boats[i].y = 0;
-            jeu->enemyBoats[i].x = 0;
-            jeu->enemyBoats[i].y = 0;
             jeu->enemyBoats[i].touch[j] = 0;
         }
     }
 
-    for(int i=0; i<10;i++){
-        for(int j=0 ; j<10;j++){
-            jeu->grille[i][j] = "🌊";
-            jeu->attackPlayer[i][j] = "    ";
-            jeu->enemyGrid[i][j] = "🌊";
-            jeu->attackEnnemy[i][j] = "    ";
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            jeu->grille[i][j]       = (Case){CASE_VIDE, -1};
+            jeu->attackPlayer[i][j] = (Case){CASE_VIDE, -1};
+            jeu->enemyGrid[i][j]    = (Case){CASE_VIDE, -1};
+            jeu->attackEnnemy[i][j] = (Case){CASE_VIDE, -1};
         }
     }
-
-
 }
 
 
@@ -253,12 +242,14 @@ void createGame(Jeu *jeu){
     resetVar(jeu);
 
 
-    for(int i=0; i<=9;i++){
-        for(int b=0 ; b<=9;b++){
-            jeu->grille[i][b] = "🌊";
-       
-        }
+    for(int i = 0; i < 10; i++){
+    for(int b = 0; b < 10; b++){
+        jeu->grille[i][b]       = (Case){CASE_VIDE, -1};
+        jeu->attackPlayer[i][b] = (Case){CASE_VIDE, -1};
+        jeu->attackEnnemy[i][b] = (Case){CASE_VIDE, -1};
+        jeu->enemyGrid[i][b]    = (Case){CASE_VIDE, -1};
     }
+}
     clearScreen();
 
 

@@ -73,9 +73,10 @@ void rules(){
 void initGrids(Jeu *jeu) {
     for (int i = 0; i < ROWS; i++) {
         for (int j = 0; j < COLS; j++) {
-            jeu->grille[i][j] = strdup(" 🌊 ");        // plateau joueur
-            jeu->attackPlayer[i][j] = strdup("    "); // plateau tirs vide
-            jeu->attackEnnemy[i][j] = strdup("    ");
+            jeu->grille[i][j]       = (Case){CASE_VIDE, -1};
+            jeu->attackPlayer[i][j] = (Case){CASE_VIDE, -1};
+            jeu->attackEnnemy[i][j] = (Case){CASE_VIDE, -1};
+            jeu->enemyGrid[i][j]    = (Case){CASE_VIDE, -1};
         }
     }
 }
@@ -109,7 +110,7 @@ int main(){
 
     printf("Terminal resized to %dx%d\n", rows, cols);
     
-   
+    
 
 
     Jeu jeu;
@@ -123,7 +124,7 @@ int main(){
     jeu.tour = 1;
     jeu.end = 0;
     
-    
+    resetVar(&jeu);
 
     for (int i=0; i<5;i++){
         jeu.boats[i].drowned = false;

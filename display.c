@@ -24,7 +24,7 @@
 #define WHITE "\033[37m"
 
 #define BLINK   "\033[5m"
-
+#define ITALIC "\x1B[3m"
 
 #define RED_BG "\033[41m"
 #define GREEN_BG "\033[42m"
@@ -45,14 +45,15 @@ void clearScreen() {
 
 
 void printLogo(int option){
-    // Les 6 lignes du logo
-    const char *lines[6] = {
+
+    const char *lines[7] = {
         "██████╗  █████╗ ████████╗████████╗██╗     ███████╗███████╗██╗  ██╗██╗██████╗ \n",
         "██╔══██╗██╔══██╗╚══██╔══╝╚══██╔══╝██║     ██╔════╝██╔════╝██║  ██║██║██╔══██╗\n",
         "██████╔╝███████║   ██║      ██║   ██║     █████╗  ███████╗███████║██║██████╔╝\n",
         "██╔══██╗██╔══██║   ██║      ██║   ██║     ██╔══╝  ╚════██║██╔══██║██║██╔═══╝ \n",
         "██████╔╝██║  ██║   ██║      ██║   ███████╗███████╗███████║██║  ██║██║██║     \n",
-        "╚═════╝ ╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚══════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝╚═╝     \n"
+        "╚═════╝ ╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚══════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝╚═╝     \n",
+        "                                                                MacOS Edition\n"
     };
 
     if (option == 2){
@@ -85,6 +86,7 @@ void printLogo(int option){
         printf(BLUE BOLD);
         for(int i = 0; i < 6; i++)
             printf("%s", lines[i]);
+        printf(ITALIC "%s", lines[6]); 
         printf(RESET);
     }
 }
@@ -92,18 +94,18 @@ void printLogo(int option){
 void afficherPlateau(Jeu *jeu){
 
     // Titres
-    if (jeu->displayEnnemy){
+    if (jeu->displayEnnemy == true){
         printf("╔════════════════════"BLINK WHITE RED_BG"plateau de jeu ENNEMI"RESET"════════════════════╗");
     } else {
         printf("╔════════════════════════plateau de jeu═══════════════════════╗");
     }
     printf("  ");
-    if (jeu->displayEnnemy){
-    printf("╔══════════════════"BLINK WHITE RED_BG"plateau des tirs ENNEMI"RESET"════════════════════╗\n");
+    if (jeu->displayEnnemy == true){
+        printf("╔══════════════════"BLINK WHITE RED_BG"plateau des tirs ENNEMI"RESET"════════════════════╗\n");
     } else {
         printf("╔══════════════════════plateau des tirs═══════════════════════╗\n");
     }
-    // Nombres de colonnes
+
     printf("║       1    2    3    4    5    6    7    8    9    10       ║");
     printf("  ");
     printf("║       1    2    3    4    5    6    7    8    9    10       ║\n");
@@ -114,63 +116,70 @@ void afficherPlateau(Jeu *jeu){
 
     for(int i = 0; i < 10; i++)
     {
-        // Ligne joueur
+        // ══════ PLATEAU JOUEUR (gauche) ══════
         printf("║ %c>  │", 'A' + i);
         for(int j = 0; j < 10; j++)
         {
+            // Vérifier si le bateau hologramme couvre cette case (placement)
             bool isBateau = false;
-
-            //plateau de jeu
-            // vérifier si la case est occupée par un bateau en placement
-            for(int t = 0; t < jeu->taille; t++){
-                int bx = jeu->horizontal ? jeu->x + t : jeu->x;
-                int by = jeu->horizontal ? jeu->y : jeu->y + t;
-                if (bx >= COLS || by >= ROWS) continue;
-                if(by == i && bx == j){
-                    isBateau = true;
-                    break;
+            if (jeu->isplacement) {
+                for(int t = 0; t < jeu->taille; t++){
+                    int bx = jeu->horizontal ? jeu->x + t : jeu->x;
+                    int by = jeu->horizontal ? jeu->y : jeu->y + t;
+                    if (bx >= COLS || by >= ROWS) continue;
+                    if(by == i && bx == j){ isBateau = true; break; }
                 }
             }
 
-            if (strcmp(jeu->grille[i][j], " ➕ ") == 0) {
-                printf(RED " ➕ " RESET "│");
-            } else if(isBateau && jeu->isplacement){
-                if (jeu->num == 1) printf(GREEN_BG BLINK " 🚢 " RESET "│");
-                else if (jeu->num == 2) printf(RED_BG BLINK " 🚢 " RESET "│");
-                else if (jeu->num == 3) printf(BLUE_BG BLINK " 🚢 " RESET "│");
-                else printf(GREEN_BG BLINK " 🚢 " RESET "│");
-            //} else if (jeu->isShooting && i == jeu->y && j == jeu->x) {
-                //printf(RED BLINK " ➕ " RESET "│");
-            } else if(jeu-> displayEnnemy == true){
-                printf(" %s │", jeu->enemyGrid[i][j]);
-                
-            }else {
-                printf(" %s │", jeu->grille[i][j]);
+            // Hologramme placement (priorité max)
+            if (isBateau && jeu->isplacement) {
+                if      (jeu->num == 1) printf(GREEN_BG BLINK " 🚢 " RESET "│");
+                else if (jeu->num == 2) printf(RED_BG   BLINK " 🚢 " RESET "│");
+                else if (jeu->num == 3) printf(BLUE_BG  BLINK " 🚢 " RESET "│");
+                else                    printf(GREEN_BG BLINK " 🚢 " RESET "│");
+                continue;
+            }
+
+            // Affichage selon displayEnnemy
+            Case c = jeu->displayEnnemy ? jeu->enemyGrid[i][j] : jeu->grille[i][j];
+
+            switch (c.etat) {
+                case CASE_BATEAU:
+                    if (jeu->displayEnnemy)
+                        printf(" 🚢 │"); // debug ennemi visible
+                    else
+                        printf(" 🚢 │"); // bateau joueur
+                    break;
+                case CASE_TOUCHE: printf(RED    " ❌ " RESET "│"); break;
+                case CASE_RATE:   printf(BLUE   " ➕ " RESET "│"); break;
+                case CASE_COULE:  printf(RED_BG " 💥 " RESET "│"); break;
+                case CASE_VIDE:
+                default:          printf(" 🌊 │"); break;
             }
         }
 
-        // Espace entre les plateaux
+        // Séparateur
         printf("     ║  ║");
 
-        // plateau des tirs 
+        // ══════ PLATEAU DES TIRS (droite) ══════
         printf(" %c>  │", 'A' + i);
         for(int j = 0; j < 10; j++)
         {
-            //if (strcmp(jeu->attackPlayer[i][j], "❌") == 0) {
-            //    printf(RED " ❌ " RESET "│"); // tir raté
-            //} else if (strcmp(jeu->attackPlayer[i][j], "💥") == 0) {
-            //    printf(RED_BG " 💥 " RESET "│"); // tir touché
-            //} else
+            // Hologramme curseur de tir
             if (jeu->isShooting && i == jeu->y && j == jeu->x) {
-                printf(RED BLINK " ➕ " RESET "│"); // hologramme tir
-            }else if(jeu->displayEnnemy == true){
-                printf("%s│", jeu->attackEnnemy[i][j]);
-            }else{
-                printf("%s│", jeu->attackPlayer[i][j]);
+                printf(RED BLINK " ➕ " RESET "│");
+                continue;
             }
-            //else {
-            //    printf("    │"); // case vide
-            //}
+
+            Case c = jeu->displayEnnemy ? jeu->attackEnnemy[i][j] : jeu->attackPlayer[i][j];
+
+            switch (c.etat) {
+                case CASE_TOUCHE: printf(RED    " ❌ " RESET "│"); break;
+                case CASE_RATE:   printf(BLUE   " 🌊 " RESET "│"); break;
+                case CASE_COULE:  printf(RED_BG " 💥 " RESET "│"); break;
+                case CASE_VIDE:
+                default:          printf("    │"); break;
+            }
         }
 
         printf("     ║\n");
@@ -182,7 +191,6 @@ void afficherPlateau(Jeu *jeu){
         }
     }
 
-    // Bas des plateaux
     printf("║     └────┴────┴────┴────┴────┴────┴────┴────┴────┴────┘     ║");
     printf("  ");
     printf("║     └────┴────┴────┴────┴────┴────┴────┴────┴────┴────┘     ║\n");
@@ -281,7 +289,7 @@ bool canPlaceBoat(Jeu *jeu) {
         if (bx >= COLS || by >= ROWS) return false;
 
         // vérifier si la case est déjà occupée
-        if (strcmp(jeu->grille[by][bx], "🚢") == 0) return false;
+        if (jeu->grille[by][bx].etat == CASE_BATEAU) return false;
     }
     return true;
 }
@@ -493,7 +501,7 @@ int interactivePlacement(const char **options, int size, Jeu *jeu) {
             for (int t = 0; t < jeu->taille; t++) {
                 int bx = jeu->horizontal ? jeu->x + t : jeu->x;
                 int by = jeu->horizontal ? jeu->y : jeu->y + t;
-                jeu->grille[by][bx] = "🚢";
+                jeu->grille[by][bx] = (Case){CASE_BATEAU, idx};
             }
 
             // Marquer le bateau comme posé
