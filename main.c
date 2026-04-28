@@ -40,16 +40,26 @@ void rules(){
 
     printf(RED "Lire attentivement les règles\n\n" RESET);
 
-    printf(BLUE"1) fonctionnement du jeu\n"RESET);
-    printf("Création d'une partie : \n");
-    printf("Lors de la création d'une partie l'invite vous demande de placer vos bateaux le bateau sélectionné s'affiche en vert ainsi que sur le plateau, vous pouvez changer le bateau sélectionné en appuyant sur W ou X.\n");
-    printf("Pour placer le bateau sélectionné, utiliser les touches Z Q S D pour le déplacer de gauche à droite et de haut en bas, pour l'orienter appuyez sur la touche C.\n");
+    printf(BLUE"1) Regle du jeu\n"RESET);
+    printf("La bataille navale est une jeu a 2 joueurs en 1 contre 1,\n");
+    printf("ils s'opposent avec comme objectif de detruire la flotte navale adverse, \n");
+    printf("vous allez devoir placer 5 bateau (porte-avion, croiseur, contre-torpilleur, sous-marin et torpilleur) en vertical ou horizontal.\n");
+    printf("Apres avoir placé vos bateaux vous pourrez démarrer la partie et vous attaquez entre vous avec votre adversaire.\n");
+    printf("Pour attaquer votre adversaire vous devrez selectionner une case sur le tableau de jeu si vous touchez vous pouvez continuer,\n");
+    printf("et si vous ne touchez pas votre tour est terminer une fois le tour de l'adversaire terminer ça sera de nouveaux votre tour ainsi\n");
+    printf("jusqu'à ce que l'un des 2 joueurs est fais couler toute la flote de l'autre.\n\n");
+
+    printf(BLUE"2) Placement sur le tableau\n"RESET);
+    printf("Lors de la création d'une partie l'invite vous demande de placer vos bateaux le bateau sélectionné s'affiche en vert ainsi que sur\n");
+    printf("le plateau, vous pouvez changer le bateau sélectionné en appuyant sur W ou X.\n");
+    printf("Pour placer le bateau sélectionné, utiliser les touches Z Q S D pour le déplacer de gauche à droite et de haut en bas,\n");
+    printf("pour l'orienter appuyez sur la touche C.\n");
     printf("une fois que la position vous satisfait appuyez sur entrée pour valider.\n");
-    printf("L'invite passera automatiquement au bateau suivant.\n");
+    printf("L'invite passera automatiquement au bateau suivant.\n\n");
 
 
-    printf(BLUE"2) types de bateaux\n"RESET);
-    printf("Il existe 4 types de bateaux : \n");
+    printf(BLUE"3) Types de bateaux\n"RESET);
+    printf("Il existe 5 types pour 4 tailles de bateaux : \n");
     printf("Porte-avion : 🚢🚢🚢🚢🚢\n");
     printf("Croiseur : 🚢🚢🚢🚢\n");
     printf("Contre-torpilleur : 🚢🚢🚢\n");
