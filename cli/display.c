@@ -418,11 +418,14 @@ int pauseMenu(Jeu *jeu) {
                     if (strcmp(code, "SAMSAM") == 0) {
                         printf(GREEN "Code validé : mode invincibilité activé !\n" RESET);
                         jeu->isGodMode = true;
+                        configureTerminal(&oldSettings);
                         sleep(2);
+                        
                     } else if (strcmp(code, "HARCELEURPRIME") == 0) {
+                        configureTerminal(&oldSettings);
                         printf(GREEN "Code validé : tous les bateaux révélés !\n" RESET);
                         for (int i = 0; i < 5; i++) {
-                            jeu->enemyBoats[i].drowned = true;
+                            //jeu->enemyBoats[i].drowned = true;
                             for (int y = 0; y < 10; y++) {
                                 for (int x = 0; x < 10; x++) {
                                     if (jeu->enemyGrid[y][x].boatIndex == i) {
@@ -434,6 +437,7 @@ int pauseMenu(Jeu *jeu) {
                         sleep(2);
                     } else {
                         printf(RED "Code invalide.\n" RESET);
+                        configureTerminal(&oldSettings);
                         sleep(2);
                     }
                 break;
