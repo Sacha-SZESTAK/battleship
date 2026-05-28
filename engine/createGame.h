@@ -30,6 +30,25 @@ typedef struct {
     int touch[5];
 } Boat;
 
+/* ─── Mode de jeu ───────────────────────────────────────────── */
+typedef enum {
+    MODE_LOCAL = 0,
+    MODE_LAN   = 1
+} GameMode;
+
+/* ─── Rôle réseau ───────────────────────────────────────────── */
+typedef enum {
+    ROLE_HOST   = 0,
+    ROLE_CLIENT = 1
+} NetRole;
+
+/* ─── État de connexion ─────────────────────────────────────── */
+typedef enum {
+    NET_DISCONNECTED = 0,
+    NET_CONNECTED    = 1,
+    NET_ERROR        = -1
+} NetStatus;
+
 /* ─── État de jeu ───────────────────────────────────────────── */
 typedef struct {
     Case grille[10][10];        /* plateau joueur            */
@@ -38,25 +57,32 @@ typedef struct {
     Case attackEnnemy[10][10];  /* tirs de l'ennemi          */
 
     int nbBateaux;
-    int tour;        /* 1 = joueur, 0 = IA */
+    int tour;        /* 1 = joueur local, 0 = IA ou adversaire réseau */
     bool j1Replay;
     bool j2Replay;
 
-    /* curseur/placement */
-    int x;
-    int y;
-    int taille;
+    /* curseur / placement */
+    int  x;
+    int  y;
+    int  taille;
     bool horizontal;
     char ch;
-    int num;
+    int  num;
     bool isplacement;
 
     Boat boats[5];
     Boat enemyBoats[5];
 
-    /* flags d'affichage (interprétés uniquement par la couche CLI) */
+    /* flags d'affichage */
     bool displayEnnemy;
     bool isShooting;
+
+    int iaHitX[100];
+    int iaHitY[100];
+    int iaHitCount;
+    int iaMode;
+    int iaDifficulty;
+    int iaProbaMap[10][10]; // 10 au lieu de ROWS/COLS
 
     /* options */
     bool isDebug;
@@ -69,6 +95,14 @@ typedef struct {
     int end;
 
     char version[10];
+
+    /* ─── Champs réseau LAN ─────────────────────────────────── */
+    GameMode  gameMode;   /* MODE_LOCAL ou MODE_LAN            */
+    NetRole   netRole;    /* ROLE_HOST ou ROLE_CLIENT          */
+    NetStatus netStatus;  /* état de la connexion              */
+    int       netFd;      /* socket de communication (-1 = off)*/
+    int       netPort;    /* port TCP (configurable)           */
+    char      netIp[64];  /* IP de l'hôte (côté client)       */
 } Jeu;
 
 /* ─── Prototypes ────────────────────────────────────────────── */
@@ -79,13 +113,6 @@ void resetVar(Jeu *jeu);
 void generateOpponentBoard(Jeu *jeu);
 bool canPlaceBoatAt(Jeu *jeu, int x, int y, int taille, bool horizontal);
 int  getBoatSize(int selected);
-
-/*
- * placerBateau : pose le bateau `boatIndex` aux coordonnées
- * actuelles du jeu (jeu->x, jeu->y, jeu->horizontal, jeu->taille).
- * Retourne  0 : OK
- *          -1 : placement invalide (case occupée ou hors grille)
- */
-int placerBateau(Jeu *jeu, int boatIndex);
+int  placerBateau(Jeu *jeu, int boatIndex);
 
 #endif /* CREATEGAME_H */

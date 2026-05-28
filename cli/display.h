@@ -3,6 +3,7 @@
 
 #include "../engine/createGame.h"
 #include "../engine/game.h"
+#include "../engine/server.h"
 
 /* ─── Écran ─────────────────────────────────────────────────── */
 void clearScreen(void);
@@ -43,6 +44,9 @@ int settings(Jeu *jeu);
 
 /* ─── Boucle de jeu principale ──────────────────────────────── */
 void playGame(Jeu *jeu);
+
+/* ─── Boucle de jeu réseau LAN ──────────────────────────────── */
+void playGameLAN(Jeu *jeu);
 
 /* ─── Flux de création de partie ────────────────────────────── */
 void createGame(Jeu *jeu);

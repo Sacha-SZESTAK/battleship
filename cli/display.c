@@ -9,6 +9,7 @@
 #include "display.h"
 #include "../engine/createGame.h"
 #include "../engine/game.h"
+#include "../engine/server.h"
 
 /* ─── Codes ANSI ─────────────────────────────────────────────── */
 #define RESET     "\033[0m"
@@ -131,13 +132,31 @@ void afficherPlateau(Jeu *jeu) {
                 printf(RED BLINK " ➕ " RESET "│");
                 continue;
             }
+
             Case c = jeu->displayEnnemy ? jeu->attackEnnemy[i][j] : jeu->attackPlayer[i][j];
-            switch (c.etat) {
-                case CASE_TOUCHE: printf(RED    " ❌ " RESET "│"); break;
-                case CASE_RATE:   printf(BLUE   " 🌊 " RESET "│"); break;
-                case CASE_COULE:  printf(RED_BG " 💥 " RESET "│"); break;
-                default:          printf("    │"); break;
+            
+            // NOUVELLE LOGIQUE DEBUG
+            bool estBateauEnnemi = false;
+            if (jeu->isDebug) {
+                // On vérifie si un bateau ennemi occupe cette case
+                for (int b = 0; b < 5; b++) {
+                    Boat *boat = &jeu->enemyBoats[b];
+                    if (boat->drowned) continue;
+                    for (int t = 0; t < boat->size; t++) {
+                        int bx = boat->horizontal ? boat->x + t : boat->x;
+                        int by = boat->horizontal ? boat->y     : boat->y + t;
+                        if (bx == j && by == i) { estBateauEnnemi = true; break; }
+                    }
+                    if (estBateauEnnemi) break;
+                }
             }
+
+            // Affichage basé sur l'état ou le mode Debug
+            if (c.etat == CASE_TOUCHE) printf(RED    " ❌ " RESET "│");
+            else if (c.etat == CASE_RATE)   printf(BLUE   " 🌊 " RESET "│");
+            else if (c.etat == CASE_COULE)  printf(RED_BG " 💥 " RESET "│");
+            else if (estBateauEnnemi)       printf(" 🚢 │"); // On affiche le bateau mais l'état reste VIDE
+            else                            printf("    │");
         }
         printf("     ║\n");
 
@@ -429,7 +448,7 @@ int pauseMenu(Jeu *jeu) {
                             for (int y = 0; y < 10; y++) {
                                 for (int x = 0; x < 10; x++) {
                                     if (jeu->enemyGrid[y][x].boatIndex == i) {
-                                        jeu->attackPlayer[y][x].etat = CASE_COULE;
+                                        jeu->attackPlayer[y][x].etat = CASE_TOUCHE;
                                     }
                                 }
                             }
@@ -460,9 +479,19 @@ int settings(Jeu *jeu) {
     while (1) {
         clearScreen();
         printf(RED "===OPTIONS===\n\n" RESET);
-        printf("     Option     État\n");
+        printf("     Option               État\n");
         printf("0) : Retour\n");
-        printf("1) : Debug       %i\n", jeu->isDebug == 1 ? 1 : 0);
+        printf("1) : Debug                %s\n", jeu->isDebug   ? "ON" : "OFF");
+        printf("2) : Difficulté    %s\n",
+            jeu->iaDifficulty == 1 ? "Intermédiaire" :
+            jeu->iaDifficulty == 2 ? "Difficile" :
+                                     "Diabolique");
+        printf("3) : Mode de jeu          %s\n", jeu->gameMode == MODE_LAN ? CYAN "LAN" RESET : "LOCAL");
+        
+        if (jeu->gameMode == MODE_LAN) {
+            printf("4) : Port d'hébergement   %d\n", jeu->netPort);
+        }
+
         printf(">");
 
         if (scanf("%i", &choix) != 1) {
@@ -474,7 +503,42 @@ int settings(Jeu *jeu) {
         }
 
         if (choix == 0) return 0;
-        if (choix == 1) { toggleDebug(jeu); continue; }
+
+        if (choix == 1) {
+            toggleDebug(jeu);
+            continue;
+        }
+        if (choix == 2) {
+            jeu->iaDifficulty = (jeu->iaDifficulty % 3) + 1;
+            continue;
+        }
+
+        if (choix == 3) {
+            jeu->gameMode = (jeu->gameMode == MODE_LAN) ? MODE_LOCAL : MODE_LAN;
+            if (jeu->gameMode == MODE_LAN)
+                printf(CYAN "\nMode LAN activé. Port par défaut : %d\n" RESET, jeu->netPort);
+            else
+                printf("\nMode LOCAL activé (contre l'IA).\n");
+            sleep(1);
+            continue;
+        }
+
+        if (choix == 4 && jeu->gameMode == MODE_LAN) {
+            printf("Entrez le numéro de port (1024-65535) : ");
+            while (getchar() != '\n'); /* vider le \n du choix "4" */
+            char portStr[16] = {0};
+            if (fgets(portStr, sizeof(portStr), stdin) != NULL) {
+                int port = atoi(portStr);
+                if (port >= 1024 && port <= 65535) {
+                    jeu->netPort = port;
+                    printf(GREEN "Port mis à jour : %d\n" RESET, jeu->netPort);
+                } else {
+                    printf(RED "Port invalide (1024-65535). Valeur conservée : %d\n" RESET, jeu->netPort);
+                }
+            }
+            sleep(1);
+            continue;
+        }
 
         printf("Erreur : choix invalide\n");
     }
@@ -595,6 +659,115 @@ void createGame(Jeu *jeu) {
     resetVar(jeu);
     clearScreen();
 
+    /* ── Mode LAN ── */
+    if (jeu->gameMode == MODE_LAN) {
+        clearScreen();
+        printLogo(2);
+        printf(CYAN "\n=== MODE LAN ===\n\n" RESET);
+        printf("1) Héberger une partie (créer)\n");
+        printf("2) Rejoindre une partie\n");
+        printf("0) Retour\n");
+        printf(">");
+
+        /* Vider le \n résiduel laissé par le scanf du menu principal */
+        while (getchar() != '\n');
+
+        int choixLan = 0;
+        if (scanf("%i", &choixLan) != 1) { while (getchar() != '\n'); return; }
+        while (getchar() != '\n'); /* vider après la saisie */
+
+        if (choixLan == 0) return;
+
+        if (choixLan == 1) {
+            /* ── Hébergeur ── */
+            jeu->netRole = ROLE_HOST;
+            printf(CYAN "\nHébergement sur le port %d...\n" RESET, jeu->netPort);
+            if (net_host_start(jeu) != 0) {
+                printf(RED "Impossible de démarrer le serveur. Vérifiez le port.\n" RESET);
+                printf("Appuyez sur Entrée pour continuer.\n>");
+                getchar(); getchar();
+                return;
+            }
+        } else if (choixLan == 2) {
+            /* ── Client ── */
+            jeu->netRole = ROLE_CLIENT;
+            char ip[64];
+            int  port = jeu->netPort;
+
+            //while (getchar() != '\n');
+            printf("Entrez l'adresse IP de l'hôte : ");
+            if (fgets(ip, sizeof(ip), stdin) == NULL) return;
+            ip[strcspn(ip, "\n")] = '\0';
+
+            printf("Entrez le port (laisser vide pour %d) : ", jeu->netPort);
+            char portStr[16];
+            if (fgets(portStr, sizeof(portStr), stdin) != NULL) {
+                int p = atoi(portStr);
+                if (p >= 1024 && p <= 65535) port = p;
+            }
+
+            strncpy(jeu->netIp, ip, sizeof(jeu->netIp) - 1);
+            jeu->netIp[sizeof(jeu->netIp) - 1] = '\0';
+            jeu->netPort = port;
+
+            if (net_client_connect(jeu) != 0) {
+                printf(RED "Connexion échouée. Vérifiez l'IP et le port.\n" RESET);
+                printf("Appuyez sur Entrée pour continuer.\n>");
+                getchar();
+                return;
+            }
+        } else {
+            return;
+        }
+
+        /* ── Placement des bateaux (commun aux deux rôles) ── */
+        const char *options[] = {
+            "Porte-Avion", "Croiseur", "Contre-torpilleur", "Sous-marin", "Torpilleur"
+        };
+        int size = 5;
+
+        clearScreen();
+        printf(CYAN "Mode LAN – %s\n\n" RESET,
+               jeu->netRole == ROLE_HOST ? "Vous hébergez" : "Vous avez rejoint");
+        printf("Placez vos bateaux (ZQSD + Entrée).\n");
+        sleep(1);
+
+        jeu->isplacement = true;
+        interactivePlacement(options, size, jeu);
+        jeu->isplacement = false;
+
+        /* Envoyer mes placements à l'adversaire */
+        printf(CYAN "\nEnvoi de vos placements à l'adversaire...\n" RESET);
+        for (int i = 0; i < 5; i++)
+            net_send_placement(jeu, i);
+
+        /* Recevoir les placements de l'adversaire */
+        printf(CYAN "En attente des placements adverses...\n" RESET);
+        net_recv_placements(jeu);
+
+        if (jeu->netStatus == NET_ERROR) {
+            printf(RED "Erreur réseau lors de l'échange des placements.\n" RESET);
+            net_close(jeu);
+            printf("Appuyez sur Entrée.\n>"); getchar(); getchar();
+            return;
+        }
+
+        printf(GREEN "Les deux joueurs sont prêts !\n" RESET);
+        sleep(1);
+
+        /* L'hébergeur commence en premier (tour=1 = notre tour si HOST,
+           tour=0 = tour adverse si CLIENT) */
+        if (jeu->netRole == ROLE_CLIENT)
+            jeu->tour = 0;   /* le client attend que l'hôte tire en premier */
+        else
+            jeu->tour = 1;
+
+        playGameLAN(jeu);
+        net_close(jeu);
+        return;
+    }
+
+    /* ── Mode LOCAL (IA) ── */
     const char *options[] = {
         "Porte-Avion", "Croiseur", "Contre-torpilleur", "Sous-marin", "Torpilleur"
     };
@@ -636,7 +809,6 @@ void createGame(Jeu *jeu) {
                         printf("%s : X=%i Y=%i\n",
                                jeu->enemyBoats[i].name,
                                jeu->enemyBoats[i].x, jeu->enemyBoats[i].y);
-                    /* affichage debug du plateau ennemi */
                     jeu->displayEnnemy = true;
                     afficherPlateau(jeu);
                     jeu->displayEnnemy = false;
@@ -646,10 +818,164 @@ void createGame(Jeu *jeu) {
                 getchar();
                 playGame(jeu);
             } else {
-                createGame(jeu); /* recommencer le placement */
+                createGame(jeu);
             }
         } else {
             printf("Erreur : choix invalide\n");
         }
     }
+}
+
+/* ─── Boucle de jeu réseau LAN ──────────────────────────────── */
+
+void playGameLAN(Jeu *jeu) {
+    clearScreen();
+
+    jeu->j1Replay = false;
+    jeu->j2Replay = false;
+
+    /*
+     * Conventions :
+     *   jeu->tour == 1  →  c'est notre tour (on tire)
+     *   jeu->tour == 0  →  tour de l'adversaire (on reçoit le tir)
+     *
+     * L'hébergeur (ROLE_HOST) commence avec tour=1.
+     * Le client    (ROLE_CLIENT) commence avec tour=0.
+     */
+
+    while (jeu->end == 0) {
+
+        if (jeu->tour == 1) {
+            /* ══ Notre tour : on tire ══════════════════════════ */
+            do {
+                clearScreen();
+                afficherPlateau(jeu);
+                printf(CYAN "[LAN] À vous de tirer !\n" RESET);
+                if (jeu->j1Replay)
+                    printf(GREEN "Vous avez touché, vous rejouez !\n" RESET);
+
+                int shootRet = interactiveShoot(jeu);
+                if (shootRet == -1) {
+                    /* Abandon */
+                    net_send_quit(jeu);
+                    jeu->end = 3;
+                    break;
+                }
+
+                /* Envoyer le tir */
+                net_send_shoot(jeu, jeu->x, jeu->y);
+
+                /* Attendre le résultat */
+                int rx = 0, ry = 0, sunkIdx = -1;
+                int result = net_recv_result(jeu, &rx, &ry, &sunkIdx);
+
+                if (jeu->netStatus == NET_ERROR) {
+                    printf(RED "\nConnexion perdue.\n" RESET);
+                    jeu->end = 3;
+                    break;
+                }
+
+                if (result == SHOOT_COULE && sunkIdx >= 0) {
+                    clearScreen();
+                    printf("⚓ Vous avez coulé le %s adverse !\n",
+                           jeu->enemyBoats[sunkIdx].name);
+                    printf("Appuyez sur Entrée pour continuer...\n");
+                    getchar();
+                }
+
+                /* Vérifier fin de partie */
+                testEnd(jeu);
+                jeu->j1Replay = (result != SHOOT_RATE);
+
+            } while (jeu->j1Replay && jeu->end == 0);
+
+            if (jeu->end == 0)
+                jeu->tour = 0;   /* passer à l'adversaire */
+
+        } else {
+            /* ══ Tour de l'adversaire : on reçoit son tir ═════ */
+            clearScreen();
+            afficherPlateau(jeu);
+            printf(YELLOW "[LAN] En attente du tir adverse...\n" RESET);
+            if (jeu->j2Replay)
+                printf(YELLOW "L'adversaire a touché, il rejoue !\n" RESET);
+            fflush(stdout);
+
+            int rx = 0, ry = 0;
+            int result = net_recv_shoot(jeu, &rx, &ry);
+
+            if (jeu->netStatus == NET_ERROR || jeu->end != 0) {
+                if (jeu->end == 1) {
+                    /* QUIT reçu → on gagne */
+                    break;
+                }
+                printf(RED "\nConnexion perdue.\n" RESET);
+                jeu->end = 3;
+                break;
+            }
+
+            clearScreen();
+            afficherPlateau(jeu);
+
+            if (result == SHOOT_TOUCHE || result == SHOOT_COULE) {
+                printf(RED "L'adversaire vous a touché en %c%d !\n" RESET, 'A' + ry, rx + 1);
+                if (result == SHOOT_COULE) {
+                    for (int i = 0; i < 5; i++) {
+                        if (jeu->boats[i].drowned) {
+                            printf(RED "💥 L'adversaire a coulé votre %s !\n" RESET,
+                                   jeu->boats[i].name);
+                            break;
+                        }
+                    }
+                    printf("Appuyez sur Entrée pour continuer...\n");
+                    getchar();
+                }
+            } else {
+                printf("L'adversaire a raté en %c%d.\n", 'A' + ry, rx + 1);
+            }
+            sleep(1);
+
+            jeu->j2Replay = (result != SHOOT_RATE);
+
+            /* Vérifier fin de partie */
+            jeu->tour = 0;
+            testEnd(jeu);
+
+            if (jeu->end == 0 && !jeu->j2Replay)
+                jeu->tour = 1;   /* notre tour */
+        }
+    }
+
+    /* ── Notifier l'adversaire de la fin si on a gagné ── */
+    if (jeu->end == 1) {
+        /* On vient de couler tous ses bateaux → on lui dit */
+        int winner = (jeu->netRole == ROLE_HOST) ? 1 : 2;
+        net_send_end(jeu, winner);
+    }
+
+    /* ── Écran de fin ── */
+    clearScreen();
+    if (jeu->end == 1) {
+        printf(GREEN BLINK
+               " ██████╗  █████╗  ██████╗ ███╗   ██╗███████╗\n"
+               "██╔════╝ ██╔══██╗██╔════╝ ████╗  ██║██╔════╝\n"
+               "██║  ███╗███████║██║  ███╗██╔██╗ ██║█████╗  \n"
+               "██║   ██║██╔══██║██║   ██║██║╚██╗██║██╔══╝  \n"
+               "╚██████╔╝██║  ██║╚██████╔╝██║ ╚████║███████╗\n"
+               " ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝\n" RESET);
+        printf(GREEN BOLD "Félicitations, vous avez gagné !\n" RESET);
+    } else if (jeu->end == 2) {
+        printf(RED BLINK
+               "██████╗ ███████╗██████╗ ██████╗ ██╗   ██╗\n"
+               "██╔══██╗██╔════╝██╔══██╗██╔══██╗██║   ██║\n"
+               "██████╔╝█████╗  ██████╔╝██║  ██║██║   ██║\n"
+               "██╔═══╝ ██╔══╝  ██╔══██╗██║  ██║██║   ██║\n"
+               "██║     ███████╗██║  ██║██████╔╝╚██████╔╝\n"
+               "╚═╝     ╚══════╝╚═╝  ╚═╝╚═════╝  ╚═════╝ \n" RESET);
+        printf(RED BOLD "Vous avez perdu...\n" RESET);
+    } else {
+        printf(YELLOW "Partie abandonnée.\n" RESET);
+    }
+    printf("Appuyez sur une touche pour revenir au menu principal.\n>");
+    getchar();
 }

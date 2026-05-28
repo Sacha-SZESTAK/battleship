@@ -67,6 +67,25 @@ void resetVar(Jeu *jeu) {
     jeu->j1Replay   = false;
     jeu->j2Replay   = false;
 
+    /* Champs réseau : on ne réinitialise pas gameMode/netPort/netIp/netFd
+     * car ils sont configurés dans les options et persistent entre parties.
+     * On remet seulement l'état de connexion à déconnecté. */
+    jeu->netStatus = NET_DISCONNECTED;
+
+    /* ─── Réinitialisation IA ─────────────────────────────────
+     * CRITIQUE : ces champs doivent être à zéro avant chaque
+     * partie, sinon iaShoot lit des valeurs indéfinies → segfault.
+     * iaDifficulty persiste (choisi dans les options). */
+    jeu->iaMode     = 0;
+    jeu->iaHitCount = 0;
+    for (int k = 0; k < 100; k++) {
+        jeu->iaHitX[k] = 0;
+        jeu->iaHitY[k] = 0;
+    }
+    for (int r = 0; r < 10; r++)
+        for (int c = 0; c < 10; c++)
+            jeu->iaProbaMap[r][c] = 0;
+
     /* Noms des bateaux joueur */
     const char *names[5] = {
         "Porte-Avion", "Croiseur", "Contre-Torpilleur",

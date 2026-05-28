@@ -5,6 +5,7 @@
 
 #include "../engine/createGame.h"
 #include "../engine/game.h"
+#include "../engine/server.h"
 #include "display.h"
 
 /* ─── Codes ANSI ─────────────────────────────────────────────── */
@@ -44,6 +45,7 @@ int main(void) {
     int quitter = 0;
 
     /* État initial */
+    //jeu.iaDifficulty = 1; // Par défaut : Intermédiaire
     jeu.x          = 0;
     jeu.y          = 0;
     jeu.taille     = 5;
@@ -52,7 +54,26 @@ int main(void) {
     jeu.tour       = 1;
     jeu.end        = 0;
     jeu.isDebug    = false;
+    jeu.isGodMode  = false;
     strcpy(jeu.version, "1.0.0");
+
+    /* ─── Initialisation des champs réseau ─────────────────── */
+    jeu.gameMode  = MODE_LOCAL;
+    jeu.netRole   = ROLE_HOST;
+    jeu.netStatus = NET_DISCONNECTED;
+    jeu.netFd     = -1;
+    jeu.netPort   = 5555;
+    memset(jeu.netIp, 0, sizeof(jeu.netIp));
+
+    /* ─── Initialisation des champs IA ──────────────────────
+     * CRITIQUE : iaDifficulty doit être initialisé AVANT resetVar,
+     * resetVar ne le touche pas (il persiste entre les parties). */
+    jeu.iaDifficulty = 1;   /* 1=Intermédiaire par défaut */
+    jeu.iaMode       = 0;
+    jeu.iaHitCount   = 0;
+    memset(jeu.iaHitX,    0, sizeof(jeu.iaHitX));
+    memset(jeu.iaHitY,    0, sizeof(jeu.iaHitY));
+    memset(jeu.iaProbaMap, 0, sizeof(jeu.iaProbaMap));
 
     resetVar(&jeu);
     initGrids(&jeu);
@@ -61,6 +82,11 @@ int main(void) {
         clearScreen();
         printLogo(1);
         printf("Version : %s\n", jeu.version);
+
+        /* Indicateur de mode LAN dans le menu principal */
+        if (jeu.gameMode == MODE_LAN)
+            printf("\033[36m[Mode LAN actif – port %d]\033[0m\n", jeu.netPort);
+
         printf("\n\n");
 
         printf("Menu Principal\n");
