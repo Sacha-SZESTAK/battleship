@@ -66,16 +66,19 @@ void resetVar(Jeu *jeu) {
     jeu->displayEnnemy = false;
     jeu->j1Replay   = false;
     jeu->j2Replay   = false;
-
+/*    jeu->coupsJoues   = 0;
+    jeu->coupsTouches = 0;
+    jeu->coupsRates   = 0;
+*/
     /* Champs réseau : on ne réinitialise pas gameMode/netPort/netIp/netFd
-     * car ils sont configurés dans les options et persistent entre parties.
-     * On remet seulement l'état de connexion à déconnecté. */
+    car ils sont configurés dans les options et persistent entre parties.
+    On remet seulement l'état de connexion à déconnecté. */
     jeu->netStatus = NET_DISCONNECTED;
 
     /* ─── Réinitialisation IA ─────────────────────────────────
-     * CRITIQUE : ces champs doivent être à zéro avant chaque
-     * partie, sinon iaShoot lit des valeurs indéfinies → segfault.
-     * iaDifficulty persiste (choisi dans les options). */
+    CRITIQUE : ces champs doivent être à zéro avant chaque
+    partie, sinon iaShoot lit des valeurs indéfinies sinon segfault.
+    iaDifficulty persiste (choisi dans les options). */
     jeu->iaMode     = 0;
     jeu->iaHitCount = 0;
     for (int k = 0; k < 100; k++) {

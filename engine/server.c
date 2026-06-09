@@ -106,7 +106,7 @@ int net_host_start(Jeu *jeu) {
     struct sockaddr_in clientAddr;
     socklen_t clientLen = sizeof(clientAddr);
     int commFd = accept(serverFd, (struct sockaddr *)&clientAddr, &clientLen);
-    close(serverFd);   /* on n'accepte qu'une connexion */
+    close(serverFd);   // on n'accepte qu'une connexion
 
     if (commFd < 0) {
         perror("accept");

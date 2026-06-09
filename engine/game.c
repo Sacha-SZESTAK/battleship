@@ -49,6 +49,8 @@ int shootPlayer(Jeu *jeu) {
 
     if (!hit) {
         jeu->attackPlayer[y][x] = (Case){CASE_RATE, -1};
+        jeu->shootRates++;  
+        jeu->shootPlayed++;
     }
 
     jeu->j1Replay = hit;
@@ -57,6 +59,8 @@ int shootPlayer(Jeu *jeu) {
     if (hit) {
         int sunkIdx = testSunk(jeu);
         if (sunkIdx >= 0) return SHOOT_COULE;
+        jeu->shootHits++;
+        jeu->shootPlayed++;
         return SHOOT_TOUCHE;
     }
     return SHOOT_RATE;

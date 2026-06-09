@@ -44,8 +44,12 @@ int main(void) {
     int choix  = 1;
     int quitter = 0;
 
-    /* État initial */
+    // État initial
     //jeu.iaDifficulty = 1; // Par défaut : Intermédiaire
+    jeu.shootHits = 0;
+    jeu.shootPlayed = 0;
+    jeu.shootRates = 0;
+    
     jeu.x          = 0;
     jeu.y          = 0;
     jeu.taille     = 5;
@@ -55,7 +59,7 @@ int main(void) {
     jeu.end        = 0;
     jeu.isDebug    = false;
     jeu.isGodMode  = false;
-    strcpy(jeu.version, "1.0.0");
+    strcpy(jeu.version, "1.1.4");
 
     /* ─── Initialisation des champs réseau ─────────────────── */
     jeu.gameMode  = MODE_LOCAL;
@@ -83,7 +87,7 @@ int main(void) {
         printLogo(1);
         printf("Version : %s\n", jeu.version);
 
-        /* Indicateur de mode LAN dans le menu principal */
+        // Indicateur de mode LAN dans le menu principal
         if (jeu.gameMode == MODE_LAN)
             printf("\033[36m[Mode LAN actif – port %d]\033[0m\n", jeu.netPort);
 

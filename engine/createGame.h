@@ -57,11 +57,11 @@ typedef struct {
     Case attackEnnemy[10][10];  /* tirs de l'ennemi          */
 
     int nbBateaux;
-    int tour;        /* 1 = joueur local, 0 = IA ou adversaire réseau */
+    int tour;        // 1 = joueur local, 0 = IA ou adversaire réseau
     bool j1Replay;
     bool j2Replay;
 
-    /* curseur / placement */
+    // curseur / placement
     int  x;
     int  y;
     int  taille;
@@ -73,9 +73,14 @@ typedef struct {
     Boat boats[5];
     Boat enemyBoats[5];
 
-    /* flags d'affichage */
+    // variables d'affichage
     bool displayEnnemy;
     bool isShooting;
+
+    //statistiques de la partie
+    int shootPlayed;
+    int shootHits;
+    int shootRates;
 
     int iaHitX[100];
     int iaHitY[100];
@@ -84,7 +89,7 @@ typedef struct {
     int iaDifficulty;
     int iaProbaMap[10][10]; // 10 au lieu de ROWS/COLS
 
-    /* options */
+    // options
     bool isDebug;
     bool lost;
     bool isGodMode;

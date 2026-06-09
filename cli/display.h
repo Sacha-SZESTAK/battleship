@@ -5,7 +5,7 @@
 #include "../engine/game.h"
 #include "../engine/server.h"
 
-/* ─── Écran ─────────────────────────────────────────────────── */
+// ─── Écran ─────────────────────────────────────────────────── */
 void clearScreen(void);
 
 /* ─── Logo animé ────────────────────────────────────────────── */
@@ -35,14 +35,14 @@ int interactivePlacement(const char **options, int size, Jeu *jeu);
  */
 int interactiveShoot(Jeu *jeu);
 
-/* ─── Menu pause ─────────────────────────────────────────────── */
+// ─── Menu pause ─────────────────────────────────────────────── 
 /* Retourne 0 : reprendre, -1 : quitter */
 int pauseMenu(Jeu *jeu);
 
 /* ─── Menu paramètres ────────────────────────────────────────── */
 int settings(Jeu *jeu);
 
-/* ─── Boucle de jeu principale ──────────────────────────────── */
+// ─── Boucle de jeu principale ──────────────────────────────── 
 void playGame(Jeu *jeu);
 
 /* ─── Boucle de jeu réseau LAN ──────────────────────────────── */
